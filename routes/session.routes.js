@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
 const User = require('../models/User.model');
 const Session = require('../models/Session.model');
+const Problem = require('../models/Problem.model');
 const { verifyToken } = require('../middleware/auth.middleware');
 const { getAutoMatchState, getNotifyMatch } = require('../socket/socket.handlers');
 
 router.use(verifyToken);
+
 
 router.post('/queue/join', async (req, res) => {
   try {
@@ -104,6 +107,91 @@ router.patch('/:id/code', async (req, res) => {
     }
 
     res.json({ success: true, data: session });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Piston language version map
+const PISTON_LANGS = {
+  python: { language: 'python', version: '3.10.0' },
+  javascript: { language: 'javascript', version: '18.15.0' },
+  java: { language: 'java', version: '15.0.2' },
+  cpp: { language: 'c++', version: '10.2.0' },
+  c: { language: 'c', version: '10.2.0' },
+  go: { language: 'go', version: '1.16.2' },
+  rust: { language: 'rust', version: '1.50.0' },
+};
+
+// POST /:id/run-code — run user's code against problem test cases via Piston API
+router.post('/:id/run-code', async (req, res) => {
+  try {
+    const { code, language = 'python', problemId } = req.body;
+    if (!code) return res.status(400).json({ success: false, message: 'Code is required' });
+
+    const lang = PISTON_LANGS[language];
+    if (!lang) return res.status(400).json({ success: false, message: `Unsupported language: ${language}` });
+
+    // Get test cases from problem
+    const problem = await Problem.findById(problemId);
+    if (!problem) return res.status(404).json({ success: false, message: 'Problem not found' });
+
+    const testCases = problem.testCases || [];
+    if (testCases.length === 0) {
+      return res.status(400).json({ success: false, message: 'No test cases available for this problem. Import it from LeetCode to get test cases.' });
+    }
+
+    // Run code against each test case using Piston
+    const results = await Promise.all(testCases.map(async (tc, idx) => {
+      try {
+        const pistonRes = await axios.post('https://emkc.org/api/v2/piston/execute', {
+          language: lang.language,
+          version: lang.version,
+          files: [{ name: `solution.${language === 'cpp' ? 'cpp' : language === 'java' ? 'java' : language === 'javascript' ? 'js' : language}`, content: code }],
+          stdin: tc.input,
+          run_timeout: 5000,
+          compile_timeout: 10000,
+        }, { timeout: 15000 });
+
+        const run = pistonRes.data.run;
+        const actualOutput = (run.stdout || '').trim();
+        const expectedOutput = (tc.expected || '').trim();
+        const passed = actualOutput === expectedOutput;
+        
+        return {
+          testCase: idx + 1,
+          input: tc.input,
+          expected: expectedOutput,
+          actual: actualOutput,
+          passed,
+          stderr: run.stderr || '',
+          exitCode: run.code,
+        };
+      } catch (err) {
+        return {
+          testCase: idx + 1,
+          input: tc.input,
+          expected: tc.expected,
+          actual: '',
+          passed: false,
+          stderr: err.message,
+          exitCode: -1,
+        };
+      }
+    }));
+
+    const passCount = results.filter(r => r.passed).length;
+    res.json({
+      success: true,
+      data: {
+        results,
+        summary: {
+          passed: passCount,
+          total: results.length,
+          allPassed: passCount === results.length,
+        }
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
