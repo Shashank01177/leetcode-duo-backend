@@ -12,6 +12,7 @@ const authRoutes = require('./routes/auth.routes');
 const leetcodeRoutes = require('./routes/leetcode.routes');
 const adminRoutes = require('./routes/admin.routes');
 const sessionRoutes = require('./routes/session.routes');
+const submitRoutes = require('./routes/submit.routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -46,6 +47,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/leetcode', leetcodeRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/session', sessionRoutes);
+app.use('/api/submit', submitRoutes);
 
 // 404 handler
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
