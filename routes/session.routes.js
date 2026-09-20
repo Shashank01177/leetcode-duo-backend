@@ -84,9 +84,10 @@ router.post('/:id/end', async (req, res) => {
     session.endedAt = new Date();
     await session.save();
 
+    // Clear both users' session + queue state completely
     await User.updateMany(
       { _id: { $in: [session.userA, session.userB] } },
-      { $set: { currentSessionId: null } }
+      { $set: { currentSessionId: null, isInQueue: false } }
     );
 
     res.json({ success: true, data: session });
