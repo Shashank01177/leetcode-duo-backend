@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
   isInQueue: { type: Boolean, default: false },
   currentSessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Session', default: null },
+  leetcodeSession: { type: String, default: '' }, // LeetCode session cookie for submissions
   createdAt: { type: Date, default: Date.now }
 });
 
