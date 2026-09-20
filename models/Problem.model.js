@@ -15,6 +15,7 @@ const problemSchema = new mongoose.Schema({
   title: { type: String, required: true },
   difficulty: { type: String, enum: ['Easy', 'Medium', 'Hard'], required: true },
   description: { type: String, required: true },
+  descriptionHtml: { type: String, default: '' },   // Raw LeetCode HTML for proper rendering
   examples: [exampleSchema],
   constraints: [{ type: String }],
   testCases: [testCaseSchema],
