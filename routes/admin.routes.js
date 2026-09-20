@@ -36,10 +36,19 @@ router.post('/match', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide userAId and userBId' });
     }
 
+    // Auto-assign a random problem if none specified
+    let assignedProblem = problemId || null;
+    if (!assignedProblem) {
+      const problems = await Problem.find({});
+      if (problems.length > 0) {
+        assignedProblem = problems[Math.floor(Math.random() * problems.length)]._id;
+      }
+    }
+
     const session = await Session.create({
       userA: userAId,
       userB: userBId,
-      problem: problemId || null
+      problem: assignedProblem
     });
 
     await User.updateMany(
