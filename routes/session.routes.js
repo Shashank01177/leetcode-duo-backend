@@ -17,9 +17,16 @@ router.post('/queue/join', async (req, res) => {
     if (getAutoMatchState()) {
       const otherUser = await User.findOne({ _id: { $ne: req.user._id }, isInQueue: true });
       if (otherUser) {
+        // Auto-assign a random problem
+        const problems = await Problem.find({});
+        const randomProblem = problems.length > 0
+          ? problems[Math.floor(Math.random() * problems.length)]
+          : null;
+
         const session = await Session.create({
           userA: req.user._id,
-          userB: otherUser._id
+          userB: otherUser._id,
+          problem: randomProblem?._id || null
         });
 
         await User.updateMany(
