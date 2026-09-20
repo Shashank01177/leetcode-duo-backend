@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-let autoMatchEnabled = false;
+let autoMatchEnabled = true; // ON by default — pairs users automatically
 const connectedUsers = {};
 let ioInstance = null;
 
