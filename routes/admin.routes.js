@@ -132,4 +132,30 @@ router.post('/seed-problems', async (req, res) => {
   }
 });
 
+// Clear ALL stale queue states — call this to reset stuck users
+router.post('/reset-queue', async (req, res) => {
+  try {
+    await User.updateMany({}, { $set: { isInQueue: false } });
+    res.json({ success: true, message: 'All queue states cleared' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Assign problem to an existing session
+router.put('/sessions/:id/problem', async (req, res) => {
+  try {
+    const { problemId } = req.body;
+    const session = await Session.findByIdAndUpdate(
+      req.params.id,
+      { problem: problemId },
+      { new: true }
+    ).populate('problem');
+    if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
+    res.json({ success: true, data: session });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;
