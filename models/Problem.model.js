@@ -18,6 +18,8 @@ const problemSchema = new mongoose.Schema({
   examples: [exampleSchema],
   constraints: [{ type: String }],
   testCases: [testCaseSchema],
+  titleSlug: { type: String, default: '' },         // e.g. "two-sum" — needed for LeetCode submission
+  leetcodeQuestionId: { type: String, default: '' }, // numeric ID from LeetCode — needed for submission
   starterCode: {
     python: { type: String, default: '' },
     javascript: { type: String, default: '' },
