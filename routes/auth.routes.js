@@ -109,7 +109,10 @@ router.post('/login', async (req, res) => {
 
 router.get('/me', verifyToken, async (req, res) => {
   try {
-    res.json({ success: true, data: req.user });
+    const User = require('../models/User.model');
+    const user = await User.findById(req.user._id).select('-password -leetcodeSession');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    res.json({ success: true, data: user });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
